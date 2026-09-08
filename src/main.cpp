@@ -14,36 +14,56 @@ AdafruitIO_WiFi io(
 // referencia ao feed temperatura
 AdafruitIO_Feed *feedTemperatura = io.feed("temperatura");
 
-const int LED_PIN = 14;
-const float TEMPERATURA_LIMITE = 20.0;
+const int LED_VERDE_PIN = 14;
+const int LED_VERMELHO_PIN = 18;
+const float TEMPERATURA_LIMITE = 22.0;
 
 void handleTemperatura(AdafruitIO_Data *data);
+void atualizarLeds(float temperatura);
 
 void piscaLed(int pino, int qtdePiscas)
 {
   for (byte i = 0; i < qtdePiscas; i++)
   {
     digitalWrite(pino, HIGH);
-    delay(500);
+    delay(300);
     digitalWrite(pino, LOW);
-    delay(500);
+    delay(200);
+  }
+}
+
+void atualizarLeds(float temperatura)
+{
+  if (temperatura > TEMPERATURA_LIMITE)
+  {
+    digitalWrite(LED_VERDE_PIN, HIGH);
+    digitalWrite(LED_VERMELHO_PIN, LOW);
+    Serial.println("Temperatura acima de 22°C: LED VERDE LIGADO.");
+  }
+  else
+  {
+    digitalWrite(LED_VERDE_PIN, LOW);
+    digitalWrite(LED_VERMELHO_PIN, HIGH);
+    Serial.println("Temperatura menor ou igual a 22°C: LED VERMELHO LIGADO.");
   }
 }
 
 void setup()
 {
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(LED_VERDE_PIN, OUTPUT);
+  pinMode(LED_VERMELHO_PIN, OUTPUT);
   Serial.begin(115200);
 
   // Define o ADC (Analog-to-Digital Converter) da ESP32 com resolução de 12 bits (0-4095)
   analogReadResolution(12);
 
-  piscaLed(LED_PIN, 10);
+  digitalWrite(LED_VERDE_PIN, LOW);
+  digitalWrite(LED_VERMELHO_PIN, LOW);
+  piscaLed(LED_VERDE_PIN, 3);
+  piscaLed(LED_VERMELHO_PIN, 3);
 
   Serial.println();
-
   Serial.println("Iniciando a ESP...");
-
   Serial.print("Conectando ao Adafruit IO");
 
   // Iniciar a conexão Wi-fi e com a Adafruit IO
@@ -61,26 +81,19 @@ void setup()
   Serial.println();
 
   // Exibe o estado atual da conexão
-
   Serial.println(io.statusText());
   Serial.println("Adafruit IO conectado");
 }
 
-void handleTemperatura(AdafruitIO_Data *data){
+void handleTemperatura(AdafruitIO_Data *data)
+{
   float temperatura = data->toFloat();
 
   Serial.print("Temperatura recebida: ");
   Serial.print(temperatura, 2);
   Serial.println(" °C");
 
-  if(temperatura > TEMPERATURA_LIMITE){
-    digitalWrite(LED_PIN, HIGH);
-    Serial.println("Alerta ligado!!!");
-  }
-  else{
-    digitalWrite(LED_PIN, LOW);
-  Serial.println("Temperatura normal: LED DESLIGADO!!!");
-  }
+  atualizarLeds(temperatura);
 }
 
 void loop()
